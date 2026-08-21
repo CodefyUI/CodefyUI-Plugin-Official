@@ -34,8 +34,13 @@ cdui plugin install treeleaves30760/CodefyUI-Plugin-Official@v0.1.0
    - Keep `schema_version = 1` and align `requires_codefyui` with the CodefyUI version you've tested against.
 4. **Replace the example nodes** in [`nodes/`](./nodes) with yours. Each `.py` file under `nodes/` whose classes subclass `BaseNode` and define `NODE_NAME` gets auto-registered.
 5. **Update [`tests/conftest.py`](./tests/conftest.py)** — change `PLUGIN_ID` to match the id in your manifest.
-6. **Test locally** (see [Local testing](#local-testing) below).
-7. **Push to GitHub**, tag a release, and tell your users:
+6. **Re-prefix the node types in [`examples/`](./examples)** — every `graph.json` refers to a plugin node by its
+   *namespaced* type, `"<your-id>:<NODE_NAME>"`. The graphs here say `"official-template:HelloPlugin"`; if your
+   manifest id is `acme-vision`, they must say `"acme-vision:HelloPlugin"`. A type string that does not match a
+   registered node is not an error — the canvas draws the node as an empty box with no ports and silently drops
+   every edge attached to it, so the example *looks* broken rather than reporting a problem.
+7. **Test locally** (see [Local testing](#local-testing) below).
+8. **Push to GitHub**, tag a release, and tell your users:
    ```bash
    cdui plugin install your-username/your-repo
    ```
@@ -265,6 +270,10 @@ A confirmation prompt protects users on first install; pass `-y` to skip it in C
 | A node | `nodes/your_node_file.py` | `/api/nodes` with `provider: "plugin:<your-id>"` |
 | A preset | `presets/*.json` | `/api/presets` |
 | An example graph | `examples/<Category>/<Name>/graph.json` | `/api/examples/list` with `source: "plugin:<your-id>"` |
+
+Inside an example graph, refer to your own nodes by their namespaced type — `"type": "<your-id>:<NODE_NAME>"` —
+and to CodefyUI's built-ins by their bare name (`"Start"`, `"Print"`, `"TensorInput"`). The namespace is what keeps
+two plugins from colliding on the same `NODE_NAME`.
 | A static file (CSV, image, JSON) | `assets/your_file` | `/plugins/<your-id>/assets/your_file` |
 
 ---

@@ -3,7 +3,7 @@
   "description": "HelloPlugin → Print. Edit the `name` param on HelloPlugin to see different greetings in the Execution Log. The minimal demonstration of how a plugin node connects to a built-in (Print).",
   "nodes": [
     { "id": "start-1", "type": "Start",       "position": { "x": -240, "y": 0 }, "data": { "params": {} } },
-    { "id": "hello",   "type": "HelloPlugin", "position": { "x":   40, "y": 0 }, "data": { "params": { "name": "CodefyUI" } } },
+    { "id": "hello",   "type": "official-template:HelloPlugin", "position": { "x":   40, "y": 0 }, "data": { "params": { "name": "CodefyUI" } } },
     { "id": "print",   "type": "Print",       "position": { "x":  340, "y": 0 }, "data": { "params": { "label": "Greeting" } } }
   ],
   "edges": [
