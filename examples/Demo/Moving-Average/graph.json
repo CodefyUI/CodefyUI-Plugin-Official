@@ -4,7 +4,7 @@
   "nodes": [
     { "id": "start-1", "type": "Start",         "position": { "x": -240, "y": 0 }, "data": { "params": {} } },
     { "id": "signal",  "type": "TensorInput",   "position": { "x":   40, "y": 0 }, "data": { "params": { "shape": "20", "dtype": "float32", "value_mode": "random", "seed": 1 } } },
-    { "id": "smooth",  "type": "MovingAverage", "position": { "x":  360, "y": 0 }, "data": { "params": { "window": 5 } } },
+    { "id": "smooth",  "type": "official-template:MovingAverage", "position": { "x":  360, "y": 0 }, "data": { "params": { "window": 5 } } },
     { "id": "print",   "type": "Print",         "position": { "x":  680, "y": 0 }, "data": { "params": { "label": "Smoothed signal" } } }
   ],
   "edges": [
