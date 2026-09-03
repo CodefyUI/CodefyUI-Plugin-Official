@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from cdui_plugins.official_template.nodes.moving_average_node import MovingAverageNode
+from nodes.moving_average_node import MovingAverageNode
 
 
 def _run(x, window=3):

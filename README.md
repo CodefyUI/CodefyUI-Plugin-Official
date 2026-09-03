@@ -217,7 +217,7 @@ If your plugin legitimately needs one of the banned modules, list it in `[securi
 
 ## Local testing
 
-The example tests show the pattern. The tricky bit: at test time you haven't `cdui plugin install`'d the plugin, so the `cdui_plugins.<your-id>.*` synthetic namespace doesn't exist. [`tests/conftest.py`](./tests/conftest.py) sets it up manually.
+The example tests show the pattern: they import the nodes straight from the repository root (`from nodes.hello_plugin_node import HelloPluginNode`), which [`pytest.ini`](./pytest.ini) makes possible with `pythonpath = .` -- no `cdui plugin install` needed first. Keep `tests/` free of `import sys`, `os`, `subprocess` and the other modules the [security scan](#ast-security-gate) refuses: the scan reads every `.py` file in the repository, tests included, and one such import stops the whole plugin from installing.
 
 Run with the CodefyUI backend venv active:
 

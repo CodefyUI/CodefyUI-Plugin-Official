@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cdui_plugins.official_template.nodes.hello_plugin_node import HelloPluginNode
+from nodes.hello_plugin_node import HelloPluginNode
 
 
 def test_node_metadata():
