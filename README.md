@@ -190,7 +190,7 @@ export default defineTool({ id: 'my-panel', title: 'My Panel' }, Panel);
 
 The typed SDK is vendored in [`ui/src/sdk/`](./ui/src/sdk) (clone-and-own):
 
-- **Types** — `CodefyUIPluginAPI`, `GraphOp`, `NodeDefinition`, … mirror the host exactly, so you get full autocomplete instead of copying interfaces by hand.
+- **Types** — `CodefyUIPluginAPI`, `GraphOp`, `NodeDefinition`, … mirror the host exactly, so you get full autocomplete instead of copying interfaces by hand. (`types.ts` is generated from CodefyUI's canonical `frontend/src/plugins/contract.ts`; refresh it when you target a newer CodefyUI release.)
 - **`defineTool(opts, Component)`** — mounts your component into a floating widget and provides the API to the whole subtree.
 - **Hooks** — `useGraph`, `useNodeDefinitions`, `useGraphChanged`, `useApplyOperations`, `useToast`, `useCodefyFetch`, `useStorage`, plus `useCodefyUI()` for the raw API object.
 - **`defineNodeRenderer(Component)`** — draw a node's card body with React. Register it via `api.nodes.registerRenderer(nodeType, …)` (needs `api.apiVersion >= 2`); the host keeps the title, ports, and params. Node types use the snake_case namespace — plugin `my-plugin` exposes node type `my_plugin:MyNode`. See [`ui/src/MovingAverageNodeBody.tsx`](./ui/src/MovingAverageNodeBody.tsx) and its registration in [`ui/src/index.tsx`](./ui/src/index.tsx).

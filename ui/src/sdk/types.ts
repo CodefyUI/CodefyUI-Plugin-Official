@@ -1,13 +1,6 @@
-/**
- * CodefyUI plugin frontend API — type contract.
- *
- * A self-contained mirror of the host's `frontend/src/plugins/api.ts`,
- * `ops.ts`, and `types/index.ts`. It has NO imports so it drops cleanly into
- * any plugin. Keep it in sync with the CodefyUI release you target
- * (`requires_codefyui` in cdui.plugin.toml). The host implements this exact
- * interface, so a future CodefyUI release can generate this file from source
- * to guarantee no drift.
- */
+// CodefyUI plugin SDK — type contract (mirrors the host's plugin API).
+// Generated from CodefyUI's frontend/src/plugins/contract.ts — do not edit
+// by hand; refresh it when you target a newer CodefyUI release.
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
