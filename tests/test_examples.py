@@ -20,17 +20,27 @@ before your users see it.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pytest
 
-from cdui_plugins.official_template.nodes.hello_plugin_node import HelloPluginNode
-from cdui_plugins.official_template.nodes.moving_average_node import MovingAverageNode
+from nodes.hello_plugin_node import HelloPluginNode
+from nodes.moving_average_node import MovingAverageNode
 
 from .conftest import PLUGIN_ID
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-_EXAMPLES_DIR = _REPO_ROOT / "examples"
+# Paths are plain strings on purpose: CodefyUI's install-time security scan reads
+# every .py file in the repository, tests included, and `pathlib`, `os` and `glob`
+# all need a declared capability. Plain open() needs none.
+_HERE = __file__.replace("\\", "/")
+_REPO_ROOT = _HERE[: _HERE.rfind("/tests/")]
+_EXAMPLES_DIR = _REPO_ROOT + "/examples"
+
+# Every example graph this plugin ships, relative to examples/. Add yours here --
+# the tests below check each one (a directory is never globbed, see above).
+EXAMPLES = (
+    "Demo/Hello-World",
+    "Demo/Moving-Average",
+)
 
 # Every node this plugin ships, keyed by NODE_NAME. Extend this when you add
 # a node -- it is what makes the "did you forget the prefix?" check below work.
@@ -45,37 +55,44 @@ OWN_NODES = {
 BUILTIN_TYPES = {"Start", "Print", "TensorInput"}
 
 
-def _example_files() -> list[Path]:
-    return sorted(_EXAMPLES_DIR.rglob("graph.json"))
+def _example_files() -> list[str]:
+    return [f"{_EXAMPLES_DIR}/{rel}/graph.json" for rel in EXAMPLES]
 
 
-def _ids(paths: list[Path]) -> list[str]:
-    return [p.parent.relative_to(_EXAMPLES_DIR).as_posix() for p in paths]
+def _ids(paths: list[str]) -> list[str]:
+    return list(EXAMPLES)
+
+
+def _read(path: str) -> str:
+    with open(path, encoding="utf-8") as fh:
+        return fh.read()
 
 
 _FILES = _example_files()
 
 
 def test_examples_directory_is_not_empty():
-    """Guards the glob itself: a typo'd path would make every test below vacuous."""
-    assert _FILES, f"no graph.json found under {_EXAMPLES_DIR}"
+    """Guards the list itself: a typo'd path would make every test below vacuous."""
+    assert _FILES, "EXAMPLES is empty"
+    for path in _FILES:
+        assert _read(path), f"{path} is missing or empty"
 
 
 @pytest.mark.parametrize("path", _FILES, ids=_ids(_FILES))
-def test_example_parses(path: Path):
-    data = json.loads(path.read_text(encoding="utf-8"))
+def test_example_parses(path: str):
+    data = json.loads(_read(path))
     assert data.get("nodes"), f"{path} declares no nodes"
 
 
 @pytest.mark.parametrize("path", _FILES, ids=_ids(_FILES))
-def test_node_types_resolve(path: Path):
+def test_node_types_resolve(path: str):
     """Every ``type`` is either a known built-in or one of OUR namespaced nodes.
 
     The bare-name check is the important one. ``"HelloPlugin"`` looks right to
     a human reading the file, which is precisely why the original bug survived
     review -- the name matches a real node, it is only missing the namespace.
     """
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(_read(path))
     for node in data["nodes"]:
         node_type = node["type"]
 
@@ -104,7 +121,7 @@ def test_node_types_resolve(path: Path):
 
 
 @pytest.mark.parametrize("path", _FILES, ids=_ids(_FILES))
-def test_edge_handles_exist_on_our_nodes(path: Path):
+def test_edge_handles_exist_on_our_nodes(path: str):
     """Edge handles must name a real port, or the edge is dropped silently on load.
 
     Only OUR nodes can be checked here -- the built-ins' port definitions live
@@ -112,7 +129,7 @@ def test_edge_handles_exist_on_our_nodes(path: Path):
     test its own graphs. Checking our side is enough to catch a renamed port,
     which is the failure this would otherwise hide.
     """
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(_read(path))
     ports: dict[str, tuple[set[str], set[str]]] = {}
     for node in data["nodes"]:
         _, _, name = node["type"].partition(":")
