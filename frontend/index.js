@@ -10686,7 +10686,7 @@ function m1({ node: _ }) {
 }
 function h1(_) {
   f1(_, { id: "official-template-panel", title: "Official Template" }, s1), _.nodes.registerRenderer(
-    "official_template:MovingAverage",
+    "official-template:MovingAverage",
     c1(m1)
   );
 }

@@ -92,7 +92,7 @@ The directory names in `[content]` of the manifest are **conventions**, not magi
 
 ## Writing a node
 
-Subclass `BaseNode`, define `NODE_NAME` / `CATEGORY` / `DESCRIPTION`, implement the classmethods plus `execute`:
+Subclass `BaseNode`, define `NODE_NAME` / `CATEGORY` / `DESCRIPTION` (and `DETAILS` when there is more to say), implement the classmethods plus `execute`:
 
 ```python
 from app.core.node_base import (
@@ -102,7 +102,8 @@ from app.core.node_base import (
 class MyNode(BaseNode):
     NODE_NAME = "MyNode"
     CATEGORY = "Demo"
-    DESCRIPTION = "What this node does."
+    DESCRIPTION = "Multiplies a tensor by a constant factor"
+    DETAILS = "The longer explanation: what the inputs must look like, edge cases, related nodes."
 
     @classmethod
     def define_inputs(cls):
@@ -119,6 +120,8 @@ class MyNode(BaseNode):
     def execute(self, inputs, params, progress_callback=None, *, context=None):
         return {"y": inputs["x"] * params["factor"]}
 ```
+
+`DESCRIPTION` is the one-line summary the node palette shows, and the palette cuts it off past 56 characters. Everything longer goes in `DETAILS`, which the config panel and the Docs tab show under the summary; leave it empty when the summary says it all. The tests for the two example nodes check both.
 
 Available `DataType` values: `TENSOR`, `MODEL`, `DATASET`, `DATALOADER`, `OPTIMIZER`, `LOSS_FN`, `SCALAR`, `STRING`, `IMAGE`, `LIST`, `ANY`, `TRIGGER`.
 
@@ -188,12 +191,19 @@ function Panel() {
 export default defineTool({ id: 'my-panel', title: 'My Panel' }, Panel);
 ```
 
-The typed SDK is vendored in [`ui/src/sdk/`](./ui/src/sdk) (clone-and-own):
+The typed SDK is vendored in [`ui/src/sdk/`](./ui/src/sdk) (clone-and-own). It is the same SDK `cdui plugin new --ui` writes, at plugin API version 5:
 
-- **Types** — `CodefyUIPluginAPI`, `GraphOp`, `NodeDefinition`, … mirror the host exactly, so you get full autocomplete instead of copying interfaces by hand. (`types.ts` is generated from CodefyUI's canonical `frontend/src/plugins/contract.ts`; refresh it when you target a newer CodefyUI release.)
-- **`defineTool(opts, Component)`** — mounts your component into a floating widget and provides the API to the whole subtree.
-- **Hooks** — `useGraph`, `useNodeDefinitions`, `useGraphChanged`, `useApplyOperations`, `useToast`, `useCodefyFetch`, `useStorage`, plus `useCodefyUI()` for the raw API object.
-- **`defineNodeRenderer(Component)`** — draw a node's card body with React. Register it via `api.nodes.registerRenderer(nodeType, …)` (needs `api.apiVersion >= 2`); the host keeps the title, ports, and params. Node types use the snake_case namespace — plugin `my-plugin` exposes node type `my_plugin:MyNode`. See [`ui/src/MovingAverageNodeBody.tsx`](./ui/src/MovingAverageNodeBody.tsx) and its registration in [`ui/src/index.tsx`](./ui/src/index.tsx).
+- **Types** — `CodefyUIPluginAPI`, `GraphOp`, `NodeDefinition`, … mirror the host exactly, so you get full autocomplete instead of copying interfaces by hand. `types.ts` is generated from CodefyUI's canonical `frontend/src/plugins/contract.ts`. A member added after apiVersion 1 says which version it needs; check `api.apiVersion` before using one if your plugin supports older CodefyUI releases.
+- **`defineTool(opts, Component)`** — mounts your component into a floating widget and provides the API to the whole subtree. `mountTool(api, opts, Component)` does the same from inside your own `activate`, as [`ui/src/index.tsx`](./ui/src/index.tsx) does.
+- **`mountPanel(api, opts, Component)`** — the same for a tab in the editor's bottom dock (`api.apiVersion >= 3`).
+- **Hooks** — `useGraph`, `useNodeDefinitions`, `useGraphChanged`, `useApplyOperations`, `useToast`, `useCodefyFetch`, `useStorage`, plus `useCodefyUI()` for the raw API object. `useExecutionEvents` (live run events) and `useRuns` (run history) need `api.apiVersion >= 3`.
+- **`defineNodeRenderer(Component)`** — draw a node's card body with React. Register it via `api.nodes.registerRenderer(nodeType, …)` (needs `api.apiVersion >= 2`); the host keeps the title, ports, and params. A node type is the manifest id exactly as written, hyphens included, then the node name: plugin `my-plugin` exposes `my-plugin:MyNode`. See [`ui/src/MovingAverageNodeBody.tsx`](./ui/src/MovingAverageNodeBody.tsx) and its registration in [`ui/src/index.tsx`](./ui/src/index.tsx).
+
+To bring `ui/src/sdk/` up to a newer CodefyUI release, run this from a checkout of that release; the `--template` option is newer than CodefyUI 2.8.5. It overwrites `types.ts`, `react.tsx` and `index.ts` wherever they differ from that release's SDK, your own edits to them included, and leaves every other file alone:
+
+```bash
+python scripts/sync_plugin_sdk.py --template path/to/your-plugin
+```
 
 React is bundled with your plugin, so end users still install with just `cdui plugin install …` — no Node required on their side. Requires CodefyUI **≥ 1.3.0**. While developing, `cdui plugin dev .` (watches `frontend/`) paired with `pnpm dev` (rebuilds on save) hot-reloads both your Python nodes and the panel — no manual browser refresh.
 
@@ -203,7 +213,7 @@ The whole `ui/` folder is optional — delete it (and the `[frontend]` stanza) i
 
 ## AST security gate
 
-CodefyUI runs a strict AST validator on every `nodes/*.py` file before it'll install a third-party plugin from a URL. Blocked by default:
+CodefyUI runs a strict AST validator on every `.py` file in the repository, `tests/` included, before it'll install a third-party plugin from a URL: a node can import any file in the plugin, so every file is read (see [Local testing](#local-testing) for tests that pass). The full rules, including the capabilities a manifest can declare, are in [CodefyUI's plugin docs](https://docs.codefyui.com/advanced/plugins#security--three-tiers). Blocked by default:
 
 **Modules** (top-level): `os`, `subprocess`, `shutil`, `sys`, `importlib`, `ctypes`, `socket`, `http`, `urllib`, `requests`, `pathlib`, `tempfile`, `signal`, `pickle`, `shelve`, `code`, `codeop`, `compileall`.
 
@@ -211,7 +221,7 @@ CodefyUI runs a strict AST validator on every `nodes/*.py` file before it'll ins
 
 *\* `getattr` / `setattr` / `delattr` are allowed when the attribute name is a string literal: `getattr(context, "verbose", False)` works, `getattr(obj, dynamic_name)` doesn't.*
 
-If your plugin legitimately needs one of the banned modules, list it in `[security].allowed_modules` and users must install with `--trust-author`. Use this **sparingly** — most teaching nodes don't need it, and asking for it makes installation friction.
+If your plugin legitimately needs one of these modules, declare the capability that covers it first: `[security] capabilities = ["network"]` for `requests`, `urllib`, `http` or `socket`, `"filesystem"` for `pathlib`, `tempfile` or `shutil`, `"process-env"` for `os`. Users confirm a capability when they install. Only a module no capability covers, such as `subprocess` or `sys`, goes in `[security].allowed_modules`, and then users must install with `--trust-author`. Ask for either **sparingly** — most teaching nodes need neither, and every grant is one more thing to agree to at install.
 
 ---
 
@@ -254,7 +264,7 @@ cdui plugin install https://github.com/your-username/your-repo
 1. Resolve the ref to a SHA via the GitHub API.
 2. Download the tarball from `codeload.github.com`.
 3. Read + validate your manifest.
-4. AST-validate every `nodes/*.py`.
+4. AST-validate every `.py` file in the repository, tests included.
 5. Atomically move the contents to `<USER_DATA>/plugins/<your-id>/`.
 6. Run `uv pip install` for your `python_deps`.
 7. Hot-reload the running backend if `cdui start` is up.

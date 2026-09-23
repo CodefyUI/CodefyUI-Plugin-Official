@@ -26,11 +26,16 @@ from app.core.node_base import (
 class HelloPluginNode(BaseNode):
     NODE_NAME = "HelloPlugin"
     CATEGORY = "Demo"
-    DESCRIPTION = (
-        "Greets the person named in the `name` param and returns the greeting "
-        "as a STRING. Wire it to a Print node to see the result in the "
-        "Execution Log. The minimal demonstration of the BaseNode contract — "
-        "fork this template and replace it with whatever your plugin actually does."
+    DESCRIPTION = "Greets the person named in the `name` param"
+    DETAILS = (
+        "The `greeting` output is `Hello, <name>! Greetings from a CodefyUI "
+        "plugin.`, and a blank `name` falls back to `world`. Wire it to a "
+        "Print node to see the result in the Execution Log. The minimal "
+        "demonstration of the BaseNode contract: fork this template and "
+        "replace it with whatever your plugin does. DESCRIPTION is the "
+        "one-line summary the palette row shows, cut off past 56 characters. "
+        "DETAILS is this longer text, which only the config panel and the Docs "
+        "tab show; leave it empty when the summary already says it all."
     )
 
     @classmethod
