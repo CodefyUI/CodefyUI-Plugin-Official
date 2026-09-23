@@ -5,7 +5,11 @@ import {
 } from './index';
 import type { CodefyUIPluginAPI, SerializedGraph } from './index';
 
-/** A fake host API whose graph can be mutated to drive onGraphChanged. */
+/**
+ * A fake host API whose graph can be mutated to drive onGraphChanged. The
+ * members apiVersion 3-5 added are stubs: the helpers tested here never call
+ * them, but the type has them.
+ */
 function makeFakeApi() {
   let graph: SerializedGraph = { nodes: [], edges: [] };
   const listeners = new Set<() => void>();
@@ -23,6 +27,10 @@ function makeFakeApi() {
         return el;
       },
       toast: vi.fn(),
+      addPanel: vi.fn(),
+      removePanel: vi.fn(),
+      addToolbarButton: vi.fn(() => () => {}),
+      removeToolbarButton: vi.fn(),
     },
     graph: {
       getGraph: () => graph,
@@ -31,8 +39,18 @@ function makeFakeApi() {
       ],
       applyOperations: vi.fn(() => ({ results: [], refs: {}, node_count: 0, edge_count: 0 })),
       onGraphChanged: (cb) => { listeners.add(cb); return () => { listeners.delete(cb); }; },
+      getView: vi.fn(),
+    },
+    workspace: {
+      openGraphs: vi.fn(() => []),
+      tabs: vi.fn(() => []),
+      snapshot: vi.fn(),
+      applyOperations: vi.fn(),
+      onChanged: vi.fn(() => () => {}),
     },
     nodes: { registerRenderer: () => () => {} },
+    events: { onExecution: vi.fn(() => () => {}) },
+    runs: { list: vi.fn(), get: vi.fn(), metrics: vi.fn() },
     http: { fetch: vi.fn(async () => new Response('ok')) },
     storage: {
       get: (k) => window.localStorage.getItem(k),

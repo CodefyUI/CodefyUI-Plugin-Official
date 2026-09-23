@@ -67,10 +67,13 @@ entry = "frontend/index.js"
 chapters = []
 lessons  = []
 
-# OPTIONAL. The AST validator that runs on every nodes/*.py file before
-# install blocks dangerous imports (os, subprocess, sys, urllib, …) and
-# dynamic builtin calls (exec, __import__, getattr-with-dynamic-name).
-# If your plugin LEGITIMATELY needs one of the banned top-level modules,
-# list it here. Users still have to pass `--trust-author` to accept.
+# OPTIONAL. Before install, an AST validator reads every .py file in the
+# repository, tests/ included, and blocks dangerous imports (os, subprocess,
+# sys, urllib, …) and dynamic builtin calls (exec, __import__,
+# getattr-with-dynamic-name). If your plugin LEGITIMATELY needs a blocked
+# module, declare the capability that covers it first:
+# capabilities = ["network"], ["filesystem"] or ["process-env"], which users
+# confirm when they install. Only a module no capability covers (subprocess,
+# sys, …) goes in allowed_modules, and then users must pass `--trust-author`.
 [security]
 allowed_modules = []

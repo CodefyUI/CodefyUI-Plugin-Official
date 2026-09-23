@@ -15,3 +15,8 @@ If you rename the plugin (`cdui.plugin.toml > [plugin].id`), update
 from __future__ import annotations
 
 PLUGIN_ID = "official-template"
+
+# The editor's node palette shows a node's DESCRIPTION as a one-line summary
+# and cuts it off past this many characters. The rest belongs in DETAILS,
+# which the config panel and the Docs tab show under the summary.
+SUMMARY_CHARS = 56

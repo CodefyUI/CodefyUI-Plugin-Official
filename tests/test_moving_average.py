@@ -7,6 +7,8 @@ import torch
 
 from nodes.moving_average_node import MovingAverageNode
 
+from .conftest import SUMMARY_CHARS
+
 
 def _run(x, window=3):
     return MovingAverageNode().execute({"tensor": x}, {"window": window})
@@ -17,6 +19,12 @@ def test_node_metadata():
     assert MovingAverageNode.CATEGORY == "Demo"
     out_names = [p.name for p in MovingAverageNode.define_outputs()]
     assert out_names == ["smoothed"]
+
+
+def test_description_is_one_palette_line_and_details_hold_the_rest():
+    assert len(MovingAverageNode.DESCRIPTION) <= SUMMARY_CHARS
+    assert "\n" not in MovingAverageNode.DESCRIPTION
+    assert MovingAverageNode.DETAILS.strip()
 
 
 def test_window_one_is_identity():

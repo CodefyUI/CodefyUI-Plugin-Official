@@ -30,11 +30,12 @@ from app.core.step_trace import StepRecorder
 class MovingAverageNode(BaseNode):
     NODE_NAME = "MovingAverage"
     CATEGORY = "Demo"
-    DESCRIPTION = (
-        "Sliding-window mean of a 1D tensor. Uses the cumulative-sum trick "
-        "to compute every window-sum in O(L); divides by the window size to "
-        "get the mean. Output length is L - window + 1. Verbose mode records "
-        "each step for the Inspector."
+    DESCRIPTION = "Sliding-window mean of a 1D tensor"
+    DETAILS = (
+        "Uses the cumulative-sum trick to compute every window sum in O(L), "
+        "then divides by the window size to get the mean. The output length "
+        "is L - window + 1. Verbose mode records each step for the Teaching "
+        "Inspector."
     )
 
     @classmethod

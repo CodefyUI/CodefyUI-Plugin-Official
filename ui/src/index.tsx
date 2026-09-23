@@ -11,11 +11,11 @@ export default function activate(api: CodefyUIPluginAPI) {
   // 1) A floating tool panel (React).
   mountTool(api, { id: 'official-template-panel', title: 'Official Template' }, ExamplePanel);
 
-  // 2) A custom React body for this pack's MovingAverage node.
-  //    Plugin node types use the snake_case namespace — plugin id
-  //    "official-template" exposes node type "official_template:MovingAverage".
+  // 2) A custom React body for this pack's MovingAverage node. A node type is
+  //    the manifest id exactly as written, hyphens included, then NODE_NAME:
+  //    plugin id "official-template" exposes "official-template:MovingAverage".
   api.nodes.registerRenderer(
-    'official_template:MovingAverage',
+    'official-template:MovingAverage',
     defineNodeRenderer(MovingAverageNodeBody),
   );
 }
