@@ -51,6 +51,11 @@ export interface NodeDefinition {
 export type GraphOp =
   | { op: 'add_node'; node_type: string; ref?: string;
       params?: Record<string, unknown>; position?: { x: number; y: number } }
+  /**
+   * Wire an output to an input. A data input takes one source: when
+   * `target_handle` already has a wire, it is replaced, and the result's
+   * `replaced_edge_ids` names it.
+   */
   | { op: 'connect'; source: string; source_handle: string;
       target: string; target_handle: string }
   | { op: 'set_params'; node_id: string; params: Record<string, unknown> }
@@ -93,6 +98,13 @@ export interface OpResult {
   node_id?: string;
   /** Set by `set_segment` — apiVersion 5. */
   segment_id?: string;
+  /**
+   * Set by `connect` when the input already had a source wire: a data input
+   * takes one source, so `connect` replaces that wire and lists its id here.
+   * Absent when nothing was replaced. Older hosts never set it: they added the
+   * wire beside the existing one.
+   */
+  replaced_edge_ids?: string[];
 }
 
 export interface ApplyResult {
@@ -135,6 +147,20 @@ export interface GraphViewLevel {
   subgraphId: string;
   /** The block's name, exactly as the editor's breadcrumb bar shows it. */
   name: string;
+  /**
+   * The id of the block node the user stepped into, on the level above. Two
+   * copies of one block share `subgraphId`; this tells them apart.
+   *
+   * A run flattens blocks, so a node `n` on the open level runs, and its
+   * outputs are captured, as the `instanceId`s of `path` joined with `/` and
+   * then `n` (`blk/n`; `blk/nest/n` two levels down). Read such an id from
+   * `/api/execution/outputs` with the query form, `?node_id=`: a `/` cannot
+   * travel in a path segment.
+   *
+   * On an editor before CodefyUI 2.8.10, which reports apiVersion 5 as well,
+   * this field is absent, so feature-check it with `'instanceId' in level`.
+   */
+  instanceId: string;
 }
 
 /**
