@@ -31,6 +31,30 @@ export interface ParamDefinition {
   option_packs?: Record<string, string> | null;
 }
 
+/**
+ * How a node's ports follow its params (apiVersion 7). Port names are
+ * `prefix` + index, counting from `first_index`, for the count in
+ * `count_param` clamped into `min..max`; `types_param` holds their data types
+ * as a comma list when the node has one. `fixed` ports follow the counted
+ * ones whatever the count. `grows_on_connect`: a wire on the last counted
+ * input adds another.
+ */
+export interface DynamicPorts {
+  count_param: string;
+  prefix: string;
+  first_index: number;
+  min: number;
+  max: number;
+  types_param?: string;
+  fixed?: string[];
+  grows_on_connect?: boolean;
+}
+
+export interface DynamicPortsInfo {
+  inputs?: DynamicPorts;
+  outputs?: DynamicPorts;
+}
+
 export interface NodeDefinition {
   node_name: string;
   category: string;
@@ -42,6 +66,13 @@ export interface NodeDefinition {
   inputs: PortDefinition[];
   outputs: PortDefinition[];
   params: ParamDefinition[];
+  /**
+   * Present when some ports follow params (PythonScript, Split,
+   * ComposeTransform, Switch): which param sets them and how they are named.
+   * The `inputs`/`outputs` lists above are the default params' ports.
+   * apiVersion 7.
+   */
+  dynamic_ports?: DynamicPortsInfo;
   /** Package Center: the optional pack this node needs before it can run at
    *  all. Absent / null = covered by the base install. */
   requires_pack?: string | null;
@@ -105,6 +136,13 @@ export interface OpResult {
    * wire beside the existing one.
    */
   replaced_edge_ids?: string[];
+  /**
+   * Set by `set_params` when the new values removed ports that had wires (a
+   * PythonScript's `output_ports` lowered): the ids of the wires removed with
+   * them, as a param edit on the canvas removes them. Absent when none were.
+   * apiVersion 7; older hosts left such a wire in place.
+   */
+  removed_edge_ids?: string[];
 }
 
 export interface ApplyResult {
@@ -503,6 +541,19 @@ export interface WorkspaceTabInfo {
    * level, through `graph.getView()`.
    */
   view: GraphView;
+  /**
+   * apiVersion 7: true when closing the tab would lose work -- the same test
+   * the tab's close confirm makes (edited since it was opened or last saved).
+   */
+  unsaved: boolean;
+  /**
+   * apiVersion 7: the saved graph this tab is bound to (its Save writes
+   * there), or null for a tab that has never been saved -- an example, an
+   * import, a new canvas. `file` is the stem `/api/agent/context` lists.
+   * Named `savedGraph` because `snapshot()` already uses `graph` for the
+   * document itself.
+   */
+  savedGraph: { name: string; file: string } | null;
 }
 
 export type WorkspaceSnapshot =
@@ -566,12 +617,41 @@ export type WorkspaceEvent =
   | { type: 'tabs'; tabId: string; revision: number; removed: boolean }
   | { type: 'active-tab'; tabId: string; revision: number };
 
+/** `workspace.saveGraph`'s request (apiVersion 7). */
+export interface WorkspaceSaveRequest {
+  /** Defaults to the active tab. */
+  tabId?: string;
+  /**
+   * The graph's name. Omitted: save in place to the graph the tab is bound
+   * to (`needs_name` when it is bound to none). Different from the bound
+   * graph's name: save as a new graph and bind the tab to it.
+   */
+  name?: string;
+  /** Replace another graph that already has this name. Default false (`exists`). */
+  overwrite?: boolean;
+}
+
+/** `workspace.saveGraph`'s answer (apiVersion 7). Never thrown. */
+export type WorkspaceSaveResult =
+  | { ok: true; tabId: string; name: string; file: string; created: boolean }
+  | {
+      ok: false;
+      code: 'unknown_tab' | 'read_only' | 'editing_subgraph' | 'needs_name' | 'invalid_name'
+        | 'exists' | 'cross_project' | 'project_changed' | 'failed';
+      message: string;
+    };
+
+/** `workspace.openSavedGraph`'s answer (apiVersion 7). Never thrown. */
+export type WorkspaceOpenSavedResult =
+  | { ok: true; tabId: string; alreadyOpen: boolean }
+  | { ok: false; code: 'not_found' | 'unreadable' | 'too_many_tabs' | 'failed'; message: string };
+
 /** The object the editor hands every plugin frontend at activation. */
 export interface CodefyUIPluginAPI {
   /**
-   * The contract version this editor implements: 6 today. Every version adds
+   * The contract version this editor implements: 7 today. Every version adds
    * members without changing old ones, so feature-check with `>=` (for
-   * example `api.apiVersion >= 6` before `dock: 'side'`), never `===`.
+   * example `api.apiVersion >= 7` before `workspace.saveGraph`), never `===`.
    */
   apiVersion: number;
   pluginId: string;
@@ -722,6 +802,20 @@ export interface CodefyUIPluginAPI {
     applyOperations(request: WorkspaceApplyRequest): WorkspaceApplyResult;
     /** Subscribe to workspace changes. Returns an unsubscribe function. */
     onChanged(cb: (event: WorkspaceEvent) => void): () => void;
+    /**
+     * apiVersion 7. Save a tab exactly as the toolbar's Save does -- same
+     * serialization, the tab marked saved, the Graphs panel and Source
+     * Control updated, the cross-project guard -- without any dialog. Show
+     * the user what is about to be written before you call it.
+     */
+    saveGraph(request?: WorkspaceSaveRequest): Promise<WorkspaceSaveResult>;
+    /**
+     * apiVersion 7. Open a saved graph (by file stem, or by a title only one
+     * graph has) as a click on its Graphs panel row does: into a tab bound
+     * to it, or by raising the tab that already holds it (`alreadyOpen`).
+     * `activate` defaults to true.
+     */
+    openSavedGraph(name: string, options?: { activate?: boolean }): Promise<WorkspaceOpenSavedResult>;
   };
   /** Custom node renderers — requires apiVersion >= 2. */
   nodes: {
